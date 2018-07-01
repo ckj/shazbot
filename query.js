@@ -1,12 +1,6 @@
 var request = require('request');
 
 // Todo: server should be a function argument
-var options = {
-  url: 'https://us-central1-tribesquery.cloudfunctions.net/query/server?server=208.100.45.13:28002',
-  headers: {
-    'User-Agent': 'request',
-  }
-};
 
 var server = {};
 
@@ -22,7 +16,15 @@ function callback(error, response, body) {
 }
 
 module.exports = {
-  server: function() {
+  server: function(ip) {
+
+    var options = {
+      url: 'https://us-central1-tribesquery.cloudfunctions.net/query/server?server=' + ip,
+      headers: {
+        'User-Agent': 'request',
+      }
+    };
+  
     request(options, callback);
     return server;
   }

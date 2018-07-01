@@ -41,9 +41,12 @@ fs.readFile("players.json", (err, data) => {
   SMURF_TO_PLAYER = JSON.parse(data);
 });
 
-// Query server
+// Initial server query
 
-var server = query.server();
+var ltserver = query.server("208.100.45.13:28002");
+var puserver = query.server("208.100.45.12:28002");
+
+
 
 bot.on("ready", function(evt) {
   logger.info("Connected");
@@ -82,34 +85,25 @@ bot.on("message", function(user, userID, channelID, message, evt) {
         }
         break;
       case "baselt":
-        if (server.players) {
-          var plural = server.players.length == 1 ? "player" : "players";
-          var count = server.players.length > 0 ? server.players.length : "No";
-
-          var msg =
-            count +
-            " " +
-            plural +
-            " playing " +
-            server.map +
-            " on " +
-            server.name;
-          if (server.players.length) {
-            msg += ": ";
-            server.players.map((player, i) => {
-              if (server.players.length === i + 1) {
-                msg += player.name;
-              } else {
-                msg += player.name + ", ";
-              }
-            });
-          } else {
-            msg += ".";
-          }
-
+        var message = serverInfo(ltserver);
+        if(message) {
           bot.sendMessage({
             to: channelID,
-            message: msg
+            message: message
+          });
+        } else {
+          bot.sendMessage({
+            to: channelID,
+            message: "Server info not available at this time."
+          });
+        }
+        break;
+      case "pu":
+        var message = serverInfo(puserver);
+        if(message) {
+          bot.sendMessage({
+            to: channelID,
+            message: message
           });
         } else {
           bot.sendMessage({
@@ -156,7 +150,37 @@ bot.on("message", function(user, userID, channelID, message, evt) {
   }
 });
 
-// Periodically check server to see if anyone is playing
+function serverInfo(server) {
+  if (server.players) {
+    var plural = server.players.length == 1 ? "player" : "players";
+    var count = server.players.length > 0 ? server.players.length : "No";
+
+    var message =
+      count +
+      " " +
+      plural +
+      " playing " +
+      server.map +
+      " on " +
+      server.name;
+    if (server.players.length) {
+      message += ": ";
+      server.players.map((player, i) => {
+        if (server.players.length === i + 1) {
+          message += player.name;
+        } else {
+          message += player.name + ", ";
+        }
+      });
+    } else {
+      message += ".";
+    }
+
+    return message;
+  }
+}
+
+// Periodically check server to see if anyone is playing on nifl
 
 const INTERVAL = 30 * 1000; // 30 seconds
 const MSG_BUFFER = 30 * 60 * 1000; // 30 minutes
@@ -164,13 +188,17 @@ const PLAYER_THRESHOLD = 5;
 var lastMessage = new Date("March 15, 1985 3:15:00");
 
 setInterval(function() {
-  server = query.server();
 
-  if (server.players.length > PLAYER_THRESHOLD) {
+  // Update servers
+  
+  ltserver = query.server("208.100.45.13:28002");
+  puserver = query.server("208.100.45.12:28002");
+
+  if (ltserver.players && ltserver.players.length > PLAYER_THRESHOLD) {
     if (new Date() - lastMessage > MSG_BUFFER) {
       var activeVets = [];
 
-      server.players.map((player, i) => {
+      ltserver.players.map((player, i) => {
         let p = SMURF_TO_PLAYER[player.name];
 
         if (p) {
@@ -179,7 +207,7 @@ setInterval(function() {
       });
 
       var msg =
-        "There are " + server.players.length + " players in " + server.name;
+        "There are " + ltserver.players.length + " players in " + ltserver.name;
 
       activeVets.length
         ? (msg +=
