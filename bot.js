@@ -1,7 +1,7 @@
 const fs = require("fs");
+var request = require("request");
 var Discord = require("discord.io");
 var logger = require("winston");
-var query = require("./query");
 var Raven = require("raven");
 var _ = require("underscore");
 
@@ -10,9 +10,7 @@ var token = process.env.token;
 // Configure Sentry for error tracking
 
 if (process.env.sentryDSN) {
-  Raven.config(
-    process.env.sentryDSN
-  ).install();  
+  Raven.config(process.env.sentryDSN).install();
 }
 
 // Configure logger settings
@@ -41,12 +39,10 @@ fs.readFile("players.json", (err, data) => {
   SMURF_TO_PLAYER = JSON.parse(data);
 });
 
-// Initial server query
+// Initial server vars
 
-var ltserver = query.server("208.100.45.13:28002");
-var puserver = query.server("208.100.45.12:28002");
-
-
+var ltserver = {};
+var puserver = {};
 
 bot.on("ready", function(evt) {
   logger.info("Connected");
@@ -85,32 +81,10 @@ bot.on("message", function(user, userID, channelID, message, evt) {
         }
         break;
       case "baselt":
-        var message = serverInfo(ltserver);
-        if(message) {
-          bot.sendMessage({
-            to: channelID,
-            message: message
-          });
-        } else {
-          bot.sendMessage({
-            to: channelID,
-            message: "Server info not available at this time."
-          });
-        }
+        serverInfo(ltserver, channelID);
         break;
       case "pu":
-        var message = serverInfo(puserver);
-        if(message) {
-          bot.sendMessage({
-            to: channelID,
-            message: message
-          });
-        } else {
-          bot.sendMessage({
-            to: channelID,
-            message: "Server info not available at this time."
-          });
-        }
+        serverInfo(puserver, channelID);
         break;
       case "dox":
         var doxArgs = message.substring(5).split(" as ");
@@ -150,19 +124,16 @@ bot.on("message", function(user, userID, channelID, message, evt) {
   }
 });
 
-function serverInfo(server) {
-  if (server.players) {
+function serverInfo(server, channelID) {
+  var message;
+
+  if (server.name) {
+    
     var plural = server.players.length == 1 ? "player" : "players";
     var count = server.players.length > 0 ? server.players.length : "No";
 
-    var message =
-      count +
-      " " +
-      plural +
-      " playing " +
-      server.map +
-      " on " +
-      server.name;
+    message =
+      count + " " + plural + " playing " + server.map + " on " + server.name;
     if (server.players.length) {
       message += ": ";
       server.players.map((player, i) => {
@@ -175,53 +146,81 @@ function serverInfo(server) {
     } else {
       message += ".";
     }
-
-    return message;
+    bot.sendMessage({
+      to: channelID,
+      message: message
+    });
+  } else {
+    bot.sendMessage({
+      to: channelID,
+      message: "Server info not available right now."
+    });
   }
 }
 
-// Periodically check server to see if anyone is playing on nifl
-
-const INTERVAL = 30 * 1000; // 30 seconds
-const MSG_BUFFER = 30 * 60 * 1000; // 30 minutes
-const PLAYER_THRESHOLD = 5;
-var lastMessage = new Date("March 15, 1985 3:15:00");
-
-setInterval(function() {
-
-  // Update servers
-  
-  ltserver = query.server("208.100.45.13:28002");
-  puserver = query.server("208.100.45.12:28002");
-
-  if (ltserver.players && ltserver.players.length > PLAYER_THRESHOLD) {
-    if (new Date() - lastMessage > MSG_BUFFER) {
-      var activeVets = [];
-
-      ltserver.players.map((player, i) => {
-        let p = SMURF_TO_PLAYER[player.name];
-
-        if (p) {
-          activeVets.push(p);
-        }
-      });
-
-      var msg =
-        "There are " + ltserver.players.length + " players in " + ltserver.name;
-
-      activeVets.length
-        ? (msg +=
-            ", including these vets: **" +
-            activeVets.join(", ") +
-            "**. Join up!")
-        : (msg += ". Join up!");
-
-      bot.sendMessage({
-        to: process.env.channelId,
-        message: msg
-      });
-      lastMessage = new Date();
-    } else {
+function queryServer(ip) {
+  var server;
+  var options = {
+    url:
+      "https://us-central1-tribesquery.cloudfunctions.net/query/server?server=" +
+      ip,
+    headers: {
+      "User-Agent": "request"
     }
-  }
-}, INTERVAL);
+  };
+
+  return new Promise(function(resolve, reject) {
+    request(options, function(error, response, body) {
+      server = JSON.parse(body);
+      resolve(server);
+    });
+  });
+}
+
+function loop() {
+  const INTERVAL = 30 * 1000; // 30 seconds
+  const MSG_BUFFER = 30 * 60 * 1000; // 30 minutes
+  const PLAYER_THRESHOLD = 5;
+  var lastMessage = new Date("March 15, 1985 3:15:00");
+
+  setInterval(async function() {
+
+    // Update servers
+    ltserver = await queryServer("208.100.45.13:28002");
+    puserver = await queryServer("208.100.45.12:28002");
+    
+    // Check for pub activity
+    if (ltserver.players && ltserver.players.length > PLAYER_THRESHOLD) {
+      if (new Date() - lastMessage > MSG_BUFFER) {
+        var activeVets = [];
+  
+        ltserver.players.map((player, i) => {
+          let p = SMURF_TO_PLAYER[player.name];
+  
+          if (p) {
+            activeVets.push(p);
+          }
+        });
+  
+        var msg =
+          "There are " + ltserver.players.length + " players in " + ltserver.name;
+  
+        activeVets.length
+          ? (msg +=
+              ", including these vets: **" +
+              activeVets.join(", ") +
+              "**. Join up!")
+          : (msg += ". Join up!");
+  
+        bot.sendMessage({
+          to: process.env.channelId,
+          message: msg
+        });
+        lastMessage = new Date();
+      } else {
+      }
+    }
+  }, INTERVAL);
+}
+
+loop();
