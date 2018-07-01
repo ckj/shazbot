@@ -45,6 +45,7 @@ var ltserver = {};
 var puserver = {};
 
 bot.on("ready", function(evt) {
+  bot.setPresence(({game: {name: "Tribes", type: 0}}));
   logger.info("Connected");
   logger.info("Logged in as: ");
   logger.info(bot.username + " - (" + bot.id + ")");
