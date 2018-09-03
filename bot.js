@@ -43,9 +43,11 @@ fs.readFile("players.json", (err, data) => {
 
 var ltserver = {};
 var puserver = {};
+var baseserver = {};
+var duelserver = {};
 
 bot.on("ready", function(evt) {
-  bot.setPresence(({game: {name: "Tribes", type: 0}}));
+  bot.setPresence({ game: { name: "Tribes", type: 0 } });
   logger.info("Connected");
   logger.info("Logged in as: ");
   logger.info(bot.username + " - (" + bot.id + ")");
@@ -86,6 +88,12 @@ bot.on("message", function(user, userID, channelID, message, evt) {
         break;
       case "pu":
         serverInfo(puserver, channelID);
+        break;
+      case "base":
+        serverInfo(baseserver, channelID);
+        break;
+      case "duel":
+        serverInfo(duelserver, channelID);
         break;
       case "dox":
         var doxArgs = message.substring(5).split(" as ");
@@ -128,17 +136,23 @@ bot.on("message", function(user, userID, channelID, message, evt) {
 function serverInfo(server, channelID) {
   var message;
 
-  if (server.name) {
-    
-    var plural = server.players.length == 1 ? "player" : "players";
-    var count = server.players.length > 0 ? server.players.length : "No";
+  if (server.status) {
+    var plural = server.status.players.length == 1 ? "player" : "players";
+    var count =
+      server.status.players.length > 0 ? server.status.players.length : "No";
 
     message =
-      count + " " + plural + " playing " + server.map + " on " + server.name;
-    if (server.players.length) {
+      count +
+      " " +
+      plural +
+      " playing " +
+      server.status.map +
+      " on " +
+      server.status.name;
+    if (server.status.players.length) {
       message += ": ";
-      server.players.map((player, i) => {
-        if (server.players.length === i + 1) {
+      server.status.players.map((player, i) => {
+        if (server.status.players.length === i + 1) {
           message += player.name;
         } else {
           message += player.name + ", ";
@@ -180,48 +194,60 @@ function queryServer(ip) {
 
 function loop() {
   const INTERVAL = 30 * 1000; // 30 seconds
-  const MSG_BUFFER = 30 * 60 * 1000; // 30 minutes
-  const PLAYER_THRESHOLD = 5;
-  var lastMessage = new Date("March 15, 1985 3:15:00");
 
   setInterval(async function() {
-
     // Update servers
-    ltserver = await queryServer("208.100.45.13:28002");
-    puserver = await queryServer("208.100.45.12:28002");
+    ltserver.status = await queryServer("208.100.45.13:28002");
+    puserver.status = await queryServer("208.100.45.12:28002");
+    baseserver.status = await queryServer("208.100.45.13:28003");
+    duelserver.status = await queryServer("208.100.45.13:28001");
     
-    // Check for pub activity
-    if (ltserver.players && ltserver.players.length > PLAYER_THRESHOLD) {
-      if (new Date() - lastMessage > MSG_BUFFER) {
-        var activeVets = [];
-  
-        ltserver.players.map((player, i) => {
-          let p = SMURF_TO_PLAYER[player.name];
-  
-          if (p) {
-            activeVets.push(p);
-          }
-        });
-  
-        var msg =
-          "There are " + ltserver.players.length + " players in " + ltserver.name;
-  
-        activeVets.length
-          ? (msg +=
-              ", including these vets: **" +
-              activeVets.join(", ") +
-              "**. Join up!")
-          : (msg += ". Join up!");
-  
-        bot.sendMessage({
-          to: process.env.channelId,
-          message: msg
-        });
-        lastMessage = new Date();
-      } else {
-      }
-    }
+    checkForActivity(ltserver, 5);
+    checkForActivity(baseserver, 5);
+    checkForActivity(duelserver, 3);
   }, INTERVAL);
+}
+
+function checkForActivity(server, threshold) {
+  const MSG_BUFFER = 30 * 60 * 1000; // 30 minutes
+
+  server.lastMessage = server.lastMessage || new Date("March 15, 1985 3:15:00");
+
+  console.log(server.lastMessage);
+
+  if (server.status.players && server.status.players.length > threshold) {
+    if (new Date() - server.lastMessage > MSG_BUFFER) {
+      var activeVets = [];
+
+      server.status.players.map((player, i) => {
+        let p = SMURF_TO_PLAYER[player.name];
+
+        if (p) {
+          activeVets.push(p);
+        }
+      });
+
+      var msg =
+        "There are " +
+        server.status.players.length +
+        " players in " +
+        server.status.name;
+
+      activeVets.length
+        ? (msg +=
+            ", including these vets: **" +
+            activeVets.join(", ") +
+            "**. Join up!")
+        : (msg += ". Join up!");
+
+      bot.sendMessage({
+        to: process.env.channelId,
+        message: msg
+      });
+      server.lastMessage = new Date();
+    } else {
+    }
+  }
 }
 
 loop();
