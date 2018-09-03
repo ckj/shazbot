@@ -201,19 +201,17 @@ function loop() {
     puserver.status = await queryServer("208.100.45.12:28002");
     baseserver.status = await queryServer("208.100.45.13:28003");
     duelserver.status = await queryServer("208.100.45.13:28001");
-    
-    checkForActivity(ltserver, 5);
-    checkForActivity(baseserver, 5);
-    checkForActivity(duelserver, 3);
+
+    checkForActivity(ltserver, 5, process.env.ltChannel);
+    checkForActivity(baseserver, 5, process.env.ltChannel);
+    checkForActivity(duelserver, 2, process.env.duelChannel);
   }, INTERVAL);
 }
 
-function checkForActivity(server, threshold) {
+function checkForActivity(server, threshold, channel) {
   const MSG_BUFFER = 30 * 60 * 1000; // 30 minutes
 
   server.lastMessage = server.lastMessage || new Date("March 15, 1985 3:15:00");
-
-  console.log(server.lastMessage);
 
   if (server.status.players && server.status.players.length > threshold) {
     if (new Date() - server.lastMessage > MSG_BUFFER) {
@@ -241,7 +239,7 @@ function checkForActivity(server, threshold) {
         : (msg += ". Join up!");
 
       bot.sendMessage({
-        to: process.env.channelId,
+        to: channel,
         message: msg
       });
       server.lastMessage = new Date();
