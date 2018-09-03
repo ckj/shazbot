@@ -186,8 +186,12 @@ function queryServer(ip) {
 
   return new Promise(function(resolve, reject) {
     request(options, function(error, response, body) {
-      server = JSON.parse(body);
-      resolve(server);
+      try {
+        server = JSON.parse(body);
+        resolve(server);
+      } catch (e) {
+        console.error(e);
+      }
     });
   });
 }
