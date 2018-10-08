@@ -201,7 +201,7 @@ function loop() {
 
   setInterval(async function() {
     // Update servers
-    ltserver.status = await queryServer("208.100.45.13:28002");
+    ltserver.status = await queryServer("208.100.45.11:28001");
     puserver.status = await queryServer("208.100.45.12:28002");
     baseserver.status = await queryServer("208.100.45.13:28003");
     duelserver.status = await queryServer("208.100.45.13:28001");
