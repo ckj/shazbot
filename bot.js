@@ -45,6 +45,7 @@ var ltserver = {};
 var puserver = {};
 var baseserver = {};
 var duelserver = {};
+var anniserver = {};
 
 bot.on("ready", function(evt) {
   bot.setPresence({ game: { name: "Tribes", type: 0 } });
@@ -94,6 +95,9 @@ bot.on("message", function(user, userID, channelID, message, evt) {
         break;
       case "duel":
         serverInfo(duelserver, channelID);
+        break;
+      case "anni":
+        serverInfo(anniserver, channelID);
         break;
       case "dox":
         var doxArgs = message.substring(5).split(" as ");
@@ -205,9 +209,11 @@ function loop() {
     puserver.status = await queryServer("208.100.45.12:28002");
     baseserver.status = await queryServer("208.100.45.13:28003");
     duelserver.status = await queryServer("208.100.45.13:28001");
+    anniserver.status = await queryServer("208.100.45.12:28001");
 
     checkForActivity(ltserver, 5, process.env.ltChannel);
     checkForActivity(baseserver, 5, process.env.ltChannel);
+    checkForActivity(anniserver, 5, process.env.anniChannel);
     checkForActivity(duelserver, 2, process.env.duelChannel);
   }, INTERVAL);
 }
