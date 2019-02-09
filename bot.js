@@ -39,13 +39,32 @@ fs.readFile("players.json", (err, data) => {
   SMURF_TO_PLAYER = JSON.parse(data);
 });
 
-// Initial server vars
+// Servers
 
-var ltserver = {};
-var puserver = {};
-var baseserver = {};
-var duelserver = {};
-var anniserver = {};
+let servers = [
+  {
+    name: "lt",
+    ip: "208.100.45.11:28001",
+    playerThreshold: 5,
+    channelId: "257682708170407937",
+    status: null
+  },
+  { name: "pu", ip: "208.100.45.12:28002", status: null },
+  {
+    name: "duel",
+    ip: "208.100.45.13:28001",
+    playerThreshold: 2,
+    channelId: "257682708170407937",
+    status: null
+  },
+  {
+    name: "anni",
+    ip: "208.100.45.12:28001",
+    playerThreshold: 5,
+    channelId: "504312512641105920",
+    status: null
+  }
+];
 
 bot.on("ready", function(evt) {
   bot.setPresence({ game: { name: "Tribes", type: 0 } });
@@ -62,77 +81,67 @@ bot.on("message", function(user, userID, channelID, message, evt) {
     var cmd = args[0];
 
     args = args.splice(1);
-    switch (cmd) {
-      // !ping
-      case "ping":
-        bot.sendMessage({
-          to: channelID,
-          message: "Pong!"
-        });
-        break;
-      case "whois":
-        let p = args.join(" ");
-        if (SMURF_TO_PLAYER[p]) {
+
+    if (servers[cmd]) {
+      serverInfo(servers[cmd], channelID);
+    } else {
+      switch (cmd) {
+        // !ping
+        case "ping":
           bot.sendMessage({
             to: channelID,
-            message: p + " is " + SMURF_TO_PLAYER[p] + "."
+            message: "Pong!"
           });
-        } else {
-          bot.sendMessage({
-            to: channelID,
-            message: "Idk."
-          });
-        }
-        break;
-      case "baselt":
-        serverInfo(ltserver, channelID);
-        break;
-      case "pu":
-        serverInfo(puserver, channelID);
-        break;
-      case "base":
-        serverInfo(baseserver, channelID);
-        break;
-      case "duel":
-        serverInfo(duelserver, channelID);
-        break;
-      case "anni":
-        serverInfo(anniserver, channelID);
-        break;
-      case "dox":
-        var doxArgs = message.substring(5).split(" as ");
-
-        var serverID = bot.channels[channelID].guild_id;
-        var roles = bot.servers[serverID].members[userID].roles;
-
-        roles.map((role, i) => {
-          if (
-            // Make sure user is a shazbot admin
-            bot.servers[bot.channels[channelID].guild_id].roles[role].name ==
-            "shazbot-admin"
-          ) {
-            // Todo: doxArgs needs to be case-insensitive
-            if (!SMURF_TO_PLAYER[doxArgs[0]]) {
-              SMURF_TO_PLAYER[doxArgs[0]] = doxArgs[1];
-
-              let data = JSON.stringify(SMURF_TO_PLAYER, null, 2);
-
-              fs.writeFile("players.json", data, err => {
-                if (err) throw err;
-                bot.sendMessage({
-                  to: channelID,
-                  message:
-                    "Okay, I'll remember that " +
-                    doxArgs[1] +
-                    " smurfs as " +
-                    doxArgs[0] +
-                    "."
-                });
-              });
-            }
+          break;
+        case "whois":
+          let p = args.join(" ");
+          if (SMURF_TO_PLAYER[p]) {
+            bot.sendMessage({
+              to: channelID,
+              message: p + " is " + SMURF_TO_PLAYER[p] + "."
+            });
+          } else {
+            bot.sendMessage({
+              to: channelID,
+              message: "Idk."
+            });
           }
-        });
-        break;
+          break;
+        case "dox":
+          var doxArgs = message.substring(5).split(" as ");
+
+          var serverID = bot.channels[channelID].guild_id;
+          var roles = bot.servers[serverID].members[userID].roles;
+
+          roles.map((role, i) => {
+            if (
+              // Make sure user is a shazbot admin
+              bot.servers[bot.channels[channelID].guild_id].roles[role].name ==
+              "shazbot-admin"
+            ) {
+              // Todo: doxArgs needs to be case-insensitive
+              if (!SMURF_TO_PLAYER[doxArgs[0]]) {
+                SMURF_TO_PLAYER[doxArgs[0]] = doxArgs[1];
+
+                let data = JSON.stringify(SMURF_TO_PLAYER, null, 2);
+
+                fs.writeFile("players.json", data, err => {
+                  if (err) throw err;
+                  bot.sendMessage({
+                    to: channelID,
+                    message:
+                      "Okay, I'll remember that " +
+                      doxArgs[1] +
+                      " smurfs as " +
+                      doxArgs[0] +
+                      "."
+                  });
+                });
+              }
+            }
+          });
+          break;
+      }
     }
   }
 });
@@ -177,53 +186,54 @@ function serverInfo(server, channelID) {
   }
 }
 
-function queryServer(ip) {
-  var server;
+async function queryServer(server) {
   var options = {
     url:
       "https://us-central1-tribesquery.cloudfunctions.net/query/server?server=" +
-      ip,
+      server.ip,
     headers: {
       "User-Agent": "request"
     }
   };
 
-  return new Promise(function(resolve, reject) {
-    request(options, function(error, response, body) {
-      try {
-        server = JSON.parse(body);
-        resolve(server);
-      } catch (e) {
-        console.error(e);
-      }
-    });
+  console.log("About to query server:", server.ip);
+
+  await request(options, body => {
+    try {
+      console.log("Request body for " + server.name + ":", JSON.parse(body));
+      server.status = JSON.parse(body);
+    } catch (e) {
+      console.error(e);
+    }
   });
+
+  console.log("Server status for " + server.name + ":", server.status);
+
+  checkForActivity(server);
 }
 
 function loop() {
   const INTERVAL = 30 * 1000; // 30 seconds
 
-  setInterval(async function() {
-    // Update servers
-    ltserver.status = await queryServer("208.100.45.11:28001");
-    puserver.status = await queryServer("208.100.45.12:28002");
-    baseserver.status = await queryServer("208.100.45.13:28003");
-    duelserver.status = await queryServer("208.100.45.13:28001");
-    anniserver.status = await queryServer("208.100.45.12:28001");
+  servers.map(server => {
+    console.log(server);
+    queryServer(server);
+  });
 
-    checkForActivity(ltserver, 5, process.env.ltChannel);
-    checkForActivity(baseserver, 5, process.env.ltChannel);
-    checkForActivity(anniserver, 5, process.env.anniChannel);
-    checkForActivity(duelserver, 2, process.env.duelChannel);
-  }, INTERVAL);
+  setTimeout(loop, INTERVAL);
 }
 
-function checkForActivity(server, threshold, channel) {
+function checkForActivity(server) {
   const MSG_BUFFER = 30 * 60 * 1000; // 30 minutes
 
   server.lastMessage = server.lastMessage || new Date("March 15, 1985 3:15:00");
 
-  if (server.status.players && server.status.players.length > threshold) {
+  if (
+    server.channelID &&
+    server.playerThreshold &&
+    server.status.players &&
+    server.status.players.length > server.playerThreshold
+  ) {
     if (new Date() - server.lastMessage > MSG_BUFFER) {
       var activeVets = [];
 
@@ -248,12 +258,15 @@ function checkForActivity(server, threshold, channel) {
             "**. Join up!")
         : (msg += ". Join up!");
 
+      let channel =
+        process.env.NODE_ENV == "production"
+          ? server.channelId
+          : process.env.devChannelId;
       bot.sendMessage({
         to: channel,
         message: msg
       });
       server.lastMessage = new Date();
-    } else {
     }
   }
 }
