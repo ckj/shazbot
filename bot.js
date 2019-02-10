@@ -73,7 +73,7 @@ bot.on("message", function(user, userID, channelID, message, evt) {
   // It will listen for messages that will start with `!`
   if (message.substring(0, 1) == "!") {
     var args = message.substring(1).split(" ");
-    var cmd = args[0];
+    var cmd = args[0].toLowerCase();
 
     args = args.splice(1);
 
@@ -149,14 +149,10 @@ function serverInfo(server, channelID) {
     var count =
       server.status.players.length > 0 ? server.status.players.length : "No";
 
-    message =
-      count +
-      " " +
-      plural +
-      " playing " +
-      server.status.map +
-      " on " +
-      server.status.name;
+    message = `${count} ${plural} playing ${server.status.map} on ${
+      server.status.name
+    }`;
+
     if (server.status.players.length) {
       message += ": ";
       server.status.players.map((player, i) => {
@@ -169,6 +165,7 @@ function serverInfo(server, channelID) {
     } else {
       message += ".";
     }
+
     bot.sendMessage({
       to: channelID,
       message: message
