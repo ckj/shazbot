@@ -46,7 +46,7 @@ let servers = [
     name: "lt",
     ip: "208.100.45.11:28001",
     playerThreshold: 5,
-    channelId: "257682708170407937",
+    channelId: "330270998718971905",
     status: null
   },
   { name: "pu", ip: "208.100.45.12:28002", status: null },
@@ -54,7 +54,7 @@ let servers = [
     name: "duel",
     ip: "208.100.45.13:28001",
     playerThreshold: 2,
-    channelId: "257682708170407937",
+    channelId: "235605312382566410",
     status: null
   },
   {
