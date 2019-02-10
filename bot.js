@@ -2,15 +2,13 @@ const fs = require("fs");
 var request = require("request");
 var Discord = require("discord.io");
 var logger = require("winston");
-var Raven = require("raven");
+const Sentry = require("@sentry/node");
 var _ = require("underscore");
-
-var token = process.env.token;
 
 // Configure Sentry for error tracking
 
 if (process.env.sentryDSN) {
-  Raven.config(process.env.sentryDSN).install();
+  Sentry.init({ dsn: process.env.sentryDSN });
 }
 
 // Configure logger settings
@@ -24,7 +22,7 @@ logger.level = "debug";
 // Initialize Discord Bot
 
 var bot = new Discord.Client({
-  token: token,
+  token: process.env.token,
   autorun: true
 });
 
@@ -46,23 +44,20 @@ let servers = [
     name: "lt",
     ip: "208.100.45.11:28001",
     playerThreshold: 5,
-    channelId: "330270998718971905",
-    status: null
+    channelId: "330270998718971905"
   },
-  { name: "pu", ip: "208.100.45.12:28002", status: null },
+  { name: "pu", ip: "208.100.45.12:28002" },
   {
     name: "duel",
     ip: "208.100.45.13:28001",
     playerThreshold: 2,
-    channelId: "235605312382566410",
-    status: null
+    channelId: "235605312382566410"
   },
   {
     name: "anni",
     ip: "208.100.45.12:28001",
     playerThreshold: 5,
-    channelId: "504312512641105920",
-    status: null
+    channelId: "504312512641105920"
   }
 ];
 

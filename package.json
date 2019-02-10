@@ -5,6 +5,7 @@
   "main": "bot.js",
   "author": "Chris Jennings",
   "dependencies": {
+    "@sentry/node": "^4.5.3",
     "discord.io": "github:woor/discord.io#gateway_v6",
     "foreman": "2.0.0",
     "raven": "^2.6.1",
