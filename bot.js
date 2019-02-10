@@ -61,25 +61,23 @@ let servers = [
   }
 ];
 
-bot.on("ready", function(evt) {
+bot.on("ready", evt => {
   bot.setPresence({ game: { name: "Tribes", type: 0 } });
   logger.info("Connected");
   logger.info("Logged in as: ");
   logger.info(bot.username + " - (" + bot.id + ")");
 });
 
-bot.on("message", function(user, userID, channelID, message, evt) {
-  // Our bot needs to know if it will execute a command
-  // It will listen for messages that will start with `!`
+bot.on("message", (user, userID, channelID, message, evt) => {
   if (message.substring(0, 1) == "!") {
-    var args = message.substring(1).split(" ");
-    var cmd = args[0].toLowerCase();
-
+    let args = message.substring(1).split(" ");
+    let cmd = args[0].toLowerCase();
     args = args.splice(1);
 
-    if (servers.filter(server => server.Name === cmd)) {
-      let server = servers.filter(server => server.name === cmd);
-      serverInfo(server[0], channelID);
+    let isServer = servers.filter(server => server.name === cmd);
+
+    if (isServer.length) {
+      serverInfo(isServer[0], channelID);
     } else {
       switch (cmd) {
         case "ping":
