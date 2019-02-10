@@ -82,11 +82,11 @@ bot.on("message", function(user, userID, channelID, message, evt) {
 
     args = args.splice(1);
 
-    if (servers[cmd]) {
-      serverInfo(servers[cmd], channelID);
+    if (servers.filter(server => server.Name === cmd)) {
+      let server = servers.filter(server => server.name === cmd);
+      serverInfo(server[0], channelID);
     } else {
       switch (cmd) {
-        // !ping
         case "ping":
           bot.sendMessage({
             to: channelID,
@@ -187,6 +187,11 @@ function serverInfo(server, channelID) {
 }
 
 async function queryServer(server) {
+  server.status = await doRequest(server);
+  checkForActivity(server);
+}
+
+function doRequest(server) {
   var options = {
     url:
       "https://us-central1-tribesquery.cloudfunctions.net/query/server?server=" +
@@ -196,27 +201,22 @@ async function queryServer(server) {
     }
   };
 
-  console.log("About to query server:", server.ip);
-
-  await request(options, body => {
-    try {
-      console.log("Request body for " + server.name + ":", JSON.parse(body));
-      server.status = JSON.parse(body);
-    } catch (e) {
-      console.error(e);
-    }
+  return new Promise(function(resolve, reject) {
+    request(options, function(error, res, body) {
+      if (!error && res.statusCode == 200) {
+        let json = JSON.parse(body);
+        resolve(json);
+      } else {
+        reject(error);
+      }
+    });
   });
-
-  console.log("Server status for " + server.name + ":", server.status);
-
-  checkForActivity(server);
 }
 
 function loop() {
   const INTERVAL = 30 * 1000; // 30 seconds
 
   servers.map(server => {
-    console.log(server);
     queryServer(server);
   });
 
@@ -229,7 +229,7 @@ function checkForActivity(server) {
   server.lastMessage = server.lastMessage || new Date("March 15, 1985 3:15:00");
 
   if (
-    server.channelID &&
+    server.channelId &&
     server.playerThreshold &&
     server.status.players &&
     server.status.players.length > server.playerThreshold
@@ -262,6 +262,8 @@ function checkForActivity(server) {
         process.env.NODE_ENV == "production"
           ? server.channelId
           : process.env.devChannelId;
+
+      console.log(channel, msg);
       bot.sendMessage({
         to: channel,
         message: msg
