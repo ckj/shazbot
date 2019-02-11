@@ -143,22 +143,20 @@ function serverInfo(server, channelID) {
   var message;
 
   if (server.status) {
-    var plural = server.status.players.length == 1 ? "player" : "players";
     var count =
       server.status.players.length > 0 ? server.status.players.length : "No";
+    var plural = server.status.players.length == 1 ? "player" : "players";
 
-    message = `${count} ${plural} playing ${server.status.map} on ${
+    message = `**${count} ${plural}** playing **${server.status.map}** on **${
       server.status.name
-    }`;
+    }**`;
 
     if (server.status.players.length) {
       message += ": ";
       server.status.players.map((player, i) => {
-        if (server.status.players.length === i + 1) {
-          message += player.name;
-        } else {
-          message += player.name + ", ";
-        }
+        message += `${"`" + player.name + "`"}${
+          player.team ? "" : " _(obs)_"
+        } ${server.status.players.length === i + 1 ? "" : ","} `;
       });
     } else {
       message += ".";
