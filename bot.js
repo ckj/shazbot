@@ -49,7 +49,7 @@ let servers = [
   { name: "pu", ip: "208.100.45.12:28002" },
   {
     name: "duel",
-    ip: "208.100.45.13:28001",
+    ip: "208.100.45.11:28002",
     playerThreshold: 2,
     channelId: "235605312382566410"
   },
