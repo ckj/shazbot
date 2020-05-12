@@ -70,7 +70,7 @@ bot.on("ready", evt => {
 });
 
 bot.on("disconnect", (errMsg, code) => {
-  logger.warning("Disconnected: " + errMsg + " " + code );
+  logger.warn("Disconnected: " + errMsg + " " + code );
   bot.connect();
 });
 
