@@ -1,5 +1,5 @@
 const fs = require("fs");
-var request = require("request");
+const axios = require("axios");
 var Discord = require("discord.io");
 var logger = require("winston");
 const Sentry = require("@sentry/node");
@@ -180,27 +180,25 @@ async function queryServer(server) {
   checkForActivity(server);
 }
 
-function doRequest(server) {
+const doRequest = async server => {
   var options = {
     url:
       "https://us-central1-tribesquery.cloudfunctions.net/query/server?server=" +
       server.ip,
     headers: {
       "User-Agent": "request"
-    }
+    },
+    timeout: 5000
   };
 
-  return new Promise(function(resolve, reject) {
-    request(options, function(error, res, body) {
-      if (!error && res.statusCode == 200) {
-        let json = JSON.parse(body);
-        resolve(json);
-      } else {
-        reject(error);
-      }
-    });
-  });
-}
+  try {
+    const response = await axios(options);
+    const data = response.data;
+    return data;
+  } catch (error) {
+    console.log(error);
+  }
+};
 
 function loop() {
   const INTERVAL = 30 * 1000; // 30 seconds
