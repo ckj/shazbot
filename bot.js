@@ -69,6 +69,11 @@ bot.on("ready", evt => {
   logger.info("Node Env: " + process.env.NODE_ENV);
 });
 
+bot.on("disconnect", (errMsg, code) => {
+  logger.warning("Disconnected: " + errMsg + " " + code );
+  bot.connect();
+});
+
 bot.on("message", (user, userID, channelID, message, evt) => {
   if (message.substring(0, 1) == "!") {
     let args = message.substring(1).split(" ");
