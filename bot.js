@@ -216,8 +216,10 @@ function checkForActivity(server) {
   server.lastMessage = server.lastMessage || new Date("March 15, 1985 3:15:00");
 
   if (
+    server &&
     server.channelId &&
     server.playerThreshold &&
+    server.status &&
     server.status.players &&
     server.status.players.length > server.playerThreshold
   ) {
