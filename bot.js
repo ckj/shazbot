@@ -66,6 +66,7 @@ bot.on("ready", evt => {
   logger.info("Connected");
   logger.info("Logged in as: ");
   logger.info(bot.username + " - (" + bot.id + ")");
+  logger.info("Node Env: " + process.env.NODE_ENV);
 });
 
 bot.on("message", (user, userID, channelID, message, evt) => {
