@@ -40,25 +40,26 @@ fs.readFile("players.json", (err, data) => {
 // Servers
 
 let servers = [
-  // {
-  //   name: "lt",
-  //   ip: "208.100.45.11:28001",
-  //   playerThreshold: 5,
-  //   channelId: "330270998718971905"
-  // },
-  { name: "pu", ip: "67.222.138.31:28003" },
+  {
+    name: "lt",
+    ip: "67.222.138.12:28006",
+    playerThreshold: 5,
+    channelId: "330270998718971905"
+  },
+  { name: "pu", ip: "67.222.138.11:28003" },
+  { name: "stork", ip: "67.222.138.11:28004" },
   {
     name: "duel",
-    ip: "67.222.138.31:28002",
-    playerThreshold: 2,
+    ip: "67.222.138.12:28002",
+    playerThreshold: 3,
     channelId: "235605312382566410"
   },
-  {
-    name: "anni",
-    ip: "67.222.138.31:28002",
-    playerThreshold: 5,
-    channelId: "504312512641105920"
-  }
+  // {
+  //   name: "anni",
+  //   ip: "67.222.138.31:28002",
+  //   playerThreshold: 5,
+  //   channelId: "504312512641105920"
+  // }
 ];
 
 bot.on("ready", evt => {
