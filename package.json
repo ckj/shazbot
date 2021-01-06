@@ -6,7 +6,7 @@
   "author": "Chris Jennings",
   "dependencies": {
     "@sentry/node": "^5.15.5",
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "discord.io": "github:woor/discord.io#gateway_v6",
     "foreman": "2.0.0",
     "raven": "^2.6.1",
